@@ -8,20 +8,35 @@ import (
 )
 
 func parseAndSumMultiplications(memoryString string) int {
-	// Regular expression to find valid mul() instructions
 	mulPattern := regexp.MustCompile(`mul\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)`)
+	doPattern := regexp.MustCompile(`do\s*\(\s*\)`)
+	dontPattern := regexp.MustCompile(`don't\s*\(\s*\)`)
 	
-	// Find all matches
-	matches := mulPattern.FindAllStringSubmatch(memoryString, -1)
-	
-	// Calculate total sum
 	totalSum := 0
+	enabled := true
+	
+	// Find all do(), don't(), and mul instructions in the order they appear
+	fullPattern := regexp.MustCompile(`(mul\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*\)|do\s*\(\s*\)|don't\s*\(\s*\))`)
+	matches := fullPattern.FindAllStringSubmatch(memoryString, -1)
+	
 	for _, match := range matches {
-		if len(match) == 3 {
-			// Convert first and second captured groups to integers
-			x, _ := strconv.Atoi(match[1])
-			y, _ := strconv.Atoi(match[2])
-			totalSum += x * y
+		instruction := match[0]
+		
+		switch {
+		case mulPattern.MatchString(instruction):
+			// Multiplication instruction
+			if enabled {
+				submatches := mulPattern.FindStringSubmatch(instruction)
+				x, _ := strconv.Atoi(submatches[1])
+				y, _ := strconv.Atoi(submatches[2])
+				totalSum += x * y
+			}
+		case doPattern.MatchString(instruction):
+			// Enable multiplications
+			enabled = true
+		case dontPattern.MatchString(instruction):
+			// Disable multiplications
+			enabled = false
 		}
 	}
 	
@@ -41,5 +56,5 @@ func main() {
 	
 	// Calculate and print the result
 	result := parseAndSumMultiplications(memoryString)
-	fmt.Printf("Sum of all multiplication results: %d\n", result)
+	fmt.Printf("Sum of enabled multiplication results: %d\n", result)
 }
